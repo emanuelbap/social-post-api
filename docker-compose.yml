@@ -1,11 +1,27 @@
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: prova-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+
   api:
-    build: .
-    container_name: social-post-api
-    env_file:
-      - .env
+    image: emanuelbap/prova-ai-zambao:latest
+    container_name: prova-api
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      USERS_API_URL: ${USERS_API_URL}
+      USERS_API_TIMEOUT: ${USERS_API_TIMEOUT}
+    depends_on:
+      - db
     ports:
       - "80:8000"
-    volumes:
-      - ./data:/app/data
     restart: always
+
+volumes:
+  pgdata:
