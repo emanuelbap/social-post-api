@@ -11,7 +11,7 @@ services:
     restart: always
 
   api:
-    image: emanuelbap/prova-ai-zambao:latest
+    image: emanuelbap/social-post-api:latest
     container_name: prova-api
     environment:
       DATABASE_URL: ${DATABASE_URL}

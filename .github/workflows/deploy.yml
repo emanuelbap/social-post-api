@@ -36,4 +36,4 @@ jobs:
           script: |
             cd /opt/social-post-api
             docker compose pull api
-            docker compose up -d
+            docker compose up -d --force-recreate
