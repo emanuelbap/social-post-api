@@ -1,17 +1,22 @@
+from pydantic import BaseModel
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field
 
 
-class PostCreate(BaseModel):
-    titulo: str = Field(min_length=1, max_length=200)
-    mensagem: str = Field(min_length=1, max_length=5000)
+class PagamentoCreate(BaseModel):
+    codigo: str
+    valor_total: float
+    tipo: str
+    parcelas: int
+    cliente_id: str
 
 
-class PostRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
+class PagamentoRead(BaseModel):
     id: str
-    titulo: str
-    mensagem: str
+    codigo: str
+    valor_total: float
+    tipo: str
+    parcelas: int
+    valor_parcela: float
     data: datetime
-    usuario: str
+    cliente_id: str
+    cliente_email: str
