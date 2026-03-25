@@ -11,6 +11,11 @@ settings = get_settings()
 app = FastAPI(title="social-post-api")
 
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 @app.on_event("startup")
 def startup_event():
     Base.metadata.create_all(bind=engine)
