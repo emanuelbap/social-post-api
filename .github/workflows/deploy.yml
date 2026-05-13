@@ -24,8 +24,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            emanuelbap/social-post-api:latest
-            emanuelbap/social-post-api:${{ github.sha }}
+            emanuelbap/courses-api:latest
+            emanuelbap/courses-api:${{ github.sha }}
 
       - name: Deploy EC2
         uses: appleboy/ssh-action@v1.0.3
@@ -34,6 +34,6 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd /opt/social-post-api
+            cd /opt/courses-api
             docker compose pull api
             docker compose up -d --force-recreate

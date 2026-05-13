@@ -7,10 +7,10 @@ import os
 class Settings:
     database_url: str = os.getenv(
         "DATABASE_URL",
-        "postgresql+psycopg2://postgres:98765@db:5432/pagamentos",
+        "postgresql+psycopg2://postgres:98765@db:5432/courses",
     )
-    users_api_url: str = os.getenv("USERS_API_URL", "http://18.228.48.67/users")
-    users_api_timeout: float = float(os.getenv("USERS_API_TIMEOUT", "5"))
+    auth0_domain: str = os.getenv("AUTH0_DOMAIN", "")
+    auth0_client_id: str = os.getenv("AUTH0_CLIENT_ID", "")
 
 
 @lru_cache

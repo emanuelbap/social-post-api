@@ -1,17 +1,16 @@
 from time import sleep
+from typing import Dict
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.db import Base, engine, get_db
-from app.models import Pagamento
-from app.schemas import PagamentoCreate, PagamentoRead
-from app.settings import get_settings
-from app.user_client import UserClient, UserServiceError
+from app.models import Course
+from app.schemas import CourseCreate, CourseRead
+from app.auth import get_current_user, require_role
 
-settings = get_settings()
-app = FastAPI(title="API de pagamentos")
+app = FastAPI(title="API de Cursos")
 
 
 @app.get("/health")
@@ -33,68 +32,68 @@ def startup():
     raise RuntimeError("Banco indisponível")
 
 
-def get_user_client() -> UserClient:
-    return UserClient(
-        base_url=settings.users_api_url,
-        timeout=settings.users_api_timeout,
-    )
-
-
-@app.get("/pagamento", response_model=list[PagamentoRead])
-def listar_pagamentos(cliente_id: str | None = None, db: Session = Depends(get_db)):
-    query = db.query(Pagamento)
-
-    if cliente_id:
-        query = query.filter(Pagamento.cliente_id == cliente_id)
-
-    return query.order_by(Pagamento.data_pagamento.desc()).all()
-
-
-@app.post("/pagamento", response_model=PagamentoRead, status_code=status.HTTP_201_CREATED)
-def criar_pagamento(
-    payload: PagamentoCreate,
-    db: Session = Depends(get_db),
-    user_client: UserClient = Depends(get_user_client),
+@app.get("/courses", response_model=list[CourseRead])
+def listar_cursos(
+    user: Dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
-    try:
-        user = user_client.get_user(payload.cliente_id)
-    except UserServiceError as exc:
-        raise HTTPException(status_code=503, detail=str(exc))
+    """
+    Listar cursos. Disponível para ADMIN e USER.
+    """
+    return db.query(Course).order_by(Course.created_at.desc()).all()
 
-    if not user:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
 
-    tipo = payload.tipo_pagamento.strip().lower()
-    if tipo not in {"pix", "crédito", "credito"}:
-        raise HTTPException(status_code=400, detail="Tipo de pagamento inválido")
+@app.post("/courses", response_model=CourseRead, status_code=status.HTTP_201_CREATED)
+def cadastrar_curso(
+    payload: CourseCreate,
+    user: Dict = Depends(require_role("admin")),
+    db: Session = Depends(get_db)
+):
+    """
+    Cadastrar novo curso. Apenas ADMIN pode criar.
+    """
+    admin_email = user.get("email", user.get("sub", ""))
+    
+    # Verificar se o código do curso já existe
+    existing_course = db.query(Course).filter(
+        Course.course_code == payload.course_code
+    ).first()
+    
+    if existing_course:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Código do curso já existe"
+        )
 
-    tipo_normalizado = "PIX" if tipo == "pix" else "Crédito"
-    valor_parcela = round(payload.valor_total / payload.numero_parcelas, 2)
-
-    pagamento = Pagamento(
-        cliente_id=payload.cliente_id,
-        cliente_email=user["email"],
-        codigo_pagamento=payload.codigo_pagamento,
-        valor_total=payload.valor_total,
-        tipo_pagamento=tipo_normalizado,
-        numero_parcelas=payload.numero_parcelas,
-        valor_parcela=valor_parcela,
-        data_pagamento=payload.data_pagamento,
+    course = Course(
+        course_code=payload.course_code,
+        course_name=payload.course_name,
+        instructor_name=payload.instructor_name,
+        admin_email=admin_email,
     )
 
-    db.add(pagamento)
+    db.add(course)
     db.commit()
-    db.refresh(pagamento)
-    return pagamento
+    db.refresh(course)
+    return course
 
 
-@app.delete("/pagamento/{id}")
-def deletar_pagamento(id: str, db: Session = Depends(get_db)):
-    pagamento = db.query(Pagamento).filter(Pagamento.id == id).first()
+@app.delete("/courses/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def deletar_curso(
+    id: str,
+    user: Dict = Depends(require_role("admin")),
+    db: Session = Depends(get_db)
+):
+    """
+    Deletar curso. Apenas ADMIN pode deletar.
+    """
+    course = db.query(Course).filter(Course.id == id).first()
 
-    if not pagamento:
-        raise HTTPException(status_code=404, detail="Pagamento não encontrado")
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Curso não encontrado"
+        )
 
-    db.delete(pagamento)
+    db.delete(course)
     db.commit()
-    return {"msg": "Deletado com sucesso"}

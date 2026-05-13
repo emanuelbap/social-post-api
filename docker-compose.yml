@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:16-alpine
-    container_name: prova-db
+    container_name: courses-db
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -11,12 +11,12 @@ services:
     restart: always
 
   api:
-    image: emanuelbap/social-post-api:latest
-    container_name: prova-api
+    image: emanuelbap/courses-api:latest
+    container_name: courses-api
     environment:
       DATABASE_URL: ${DATABASE_URL}
-      USERS_API_URL: ${USERS_API_URL}
-      USERS_API_TIMEOUT: ${USERS_API_TIMEOUT}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
+      AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID}
     depends_on:
       - db
     ports:
