@@ -1,7 +1,7 @@
 from typing import Dict, Optional
 import requests
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from functools import lru_cache
 import jwt
 
@@ -73,7 +73,7 @@ def get_auth_handler() -> Auth0Handler:
 
 
 def get_current_user(
-    credentials: HTTPAuthCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     auth_handler: Auth0Handler = Depends(get_auth_handler)
 ) -> Dict:
     token = credentials.credentials
